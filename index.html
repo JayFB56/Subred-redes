@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora VLSM - Subredes y Hosts</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      text-align: center;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+      background-color: #e0e0e0;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+    .mode-btn.active {
+      background-color: #3498db;
+      color: white;
+    }
+    .input-group {
+      margin: 20px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    input {
+      padding: 12px;
+      width: 100px;
+      text-align: center;
+      font-size: 18px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      transition: border 0.3s;
+    }
+    input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .results {
+      margin-top: 30px;
+      text-align: left;
+    }
+    .result-box {
+      background-color: #f9f9f9;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      border-left: 4px solid #3498db;
+    }
+    .result-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #2c3e50;
+    }
+    .binary-display {
+      font-family: monospace;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #e74c3c;
+      background-color: #fefefe;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .decimal-display {
+      font-family: monospace;
+      font-size: 20px;
+      color: #27ae60;
+      margin-top: 10px;
+    }
+    .info-text {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #7f8c8d;
+      text-align: left;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Calculadora VLSM - Subredes y Hosts</h1>
+   
+    <div class="mode-selector">
+      <button class="mode-btn active" id="subnetBtn">Subred</button>
+      <button class="mode-btn" id="hostBtn">Host</button>
+    </div>
+   
+    <div class="input-group">
+      <label for="bitsInput" id="bitsLabel">Bits para Subred:</label>
+      <input type="number" id="bitsInput" min="0" max="32" value="24" oninput="updateOutput()" />
+    </div>
+   
+    <div class="results">
+      <div class="result-box">
+        <div class="result-title">Representación Binaria:</div>
+        <div class="binary-display" id="binaryOutput">11111111.11111111.11111111.00000000</div>
+      </div>
+     
+      <div class="result-box">
+        <div class="result-title">Representación Decimal:</div>
+        <div class="decimal-display" id="decimalOutput">255.255.255.0</div>
+      </div>
+    </div>
+   
+    <div class="info-text">
+      <p><strong>Modo Subred:</strong> Los bits especificados se ponen en 1 (de izquierda a derecha) y el resto en 0. Esto representa la máscara de subred.</p>
+      <p><strong>Modo Host:</strong> Los bits especificados se ponen en 0 (de derecha a izquierda) y el resto en 1. Esto representa los bits disponibles para hosts.</p>
+      <p>Ejemplo: Para una máscara /24 (subred), los primeros 24 bits son 1 y los últimos 8 son 0 (255.255.255.0). Para hosts, 8 bits permiten 254 hosts (2^8 - 2).</p>
+    </div>
+  </div>
+ 
+  <script>
+    let currentMode = 'subnet'; // 'subnet' o 'host'
+    const subnetBtn = document.getElementById('subnetBtn');
+    const hostBtn = document.getElementById('hostBtn');
+    const bitsLabel = document.getElementById('bitsLabel');
+ 
+    function setMode(mode) {
+      currentMode = mode;
+     
+      // Actualizar botones
+      if (mode === 'subnet') {
+        subnetBtn.classList.add('active');
+        hostBtn.classList.remove('active');
+        bitsLabel.textContent = 'Bits para Subred:';
+      } else {
+        subnetBtn.classList.remove('active');
+        hostBtn.classList.add('active');
+        bitsLabel.textContent = 'Bits para Host:';
+      }
+     
+      updateOutput();
+    }
+ 
+    function updateOutput() {
+      const input = document.getElementById('bitsInput');
+      let bits = parseInt(input.value, 10);
+     
+      // Validación
+      if (isNaN(bits)) bits = 0;
+      if (bits < 0) bits = 0;
+      if (bits > 32) bits = 32;
+      input.value = bits;
+     
+      let binary = '';
+      let decimalParts = [];
+     
+      if (currentMode === 'subnet') {
+        // Modo Subred: bits en 1 desde la izquierda
+        binary = '1'.repeat(bits).padEnd(32, '0');
+      } else {
+        // Modo Host: bits en 0 desde la derecha
+        binary = '1'.repeat(32 - bits).padEnd(32, '0');
+      }
+     
+      // Formatear binario con puntos cada 8 bits
+      let formattedBinary = '';
+      for (let i = 0; i < 4; i++) {
+        formattedBinary += binary.slice(i * 8, (i + 1) * 8);
+        if (i < 3) formattedBinary += '.';
+      }
+     
+      // Calcular decimal
+      for (let i = 0; i < 4; i++) {
+        const octet = binary.slice(i * 8, (i + 1) * 8);
+        decimalParts.push(parseInt(octet, 2));
+      }
+     
+      // Mostrar resultados
+      document.getElementById('binaryOutput').textContent = formattedBinary;
+      document.getElementById('decimalOutput').textContent = decimalParts.join('.');
+    }
+   
+    // Event listeners
+    subnetBtn.addEventListener('click', () => setMode('subnet'));
+    hostBtn.addEventListener('click', () => setMode('host'));
+   
+    // Inicializar
+    updateOutput();
+  </script>
+</body>
+</html>
